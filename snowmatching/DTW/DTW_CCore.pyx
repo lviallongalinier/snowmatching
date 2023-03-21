@@ -15,10 +15,10 @@ cdef unsigned short U2undef = 65000
 cdef float F4undef = 3e38
 cdef float F4l = 1e20  # Large value. Normally not used, except to flag a special layer that absolutely need to be matched.
 
-# Table distance entre grains depuis Lehning 2001 (normalise a 1, 0=parfait accord)
+# Distance array between grains, inspired from Lehning 2001 (normalized to 1, 0=perfect agreement) and published in Viallon-Galinier, 2021
 cdef float GRAIN_G[10][10]
 #           X    1PP  2DF  3RG  4FC  5DH  6MF  7IF  8SH  9PPgp
-GRAIN_G = [[0,   F4l, F4l, F4l, F4l, F4l, F4l, F4l, F4l, F4l], # ligne inutile pour idexage a partir 1
+GRAIN_G = [[0,   F4l, F4l, F4l, F4l, F4l, F4l, F4l, F4l, F4l], # X
            [F4l, 0.0, 0.2, 0.5, 0.8, 1.0, 1.0, 1.0, 1.0, 0.8], # 1PP
            [F4l, 0.2, 0.0, 0.2, 0.6, 1.0, 1.0, 1.0, 1.0, 0.6], # 2DF
            [F4l, 0.5, 0.2, 0.0, 0.6, 0.9, 1.0, 0.0, 1.0, 0.5], # 3RG
@@ -46,13 +46,13 @@ cdef float Distance_grains(float S, float T):
     """
     cdef float dist_1, dist_2, dist_12, dist_21, dist_cross, dist_direc
     cdef int g_S0, g_S1, g_T0, g_T1
-    # Demultiplexer les grains :
+    # Demultiplex grains :
     g_S1 = int(S % 10)
     g_S0 = int((S - g_S1) / 10)
     g_T1 = int(T % 10)
     g_T0 = int((T - g_S1) / 10)
 
-    # Calcul distance
+    # Computation of distance
     dist_1 = GRAIN_G[g_S0][g_T0]
     dist_2 = GRAIN_G[g_S1][g_T1]
     dist_12 = GRAIN_G[g_S0][g_T1]
@@ -105,16 +105,16 @@ cpdef float DTW_multi(float[:, :] S, float[:, :] T, float[:,:] C, float[:,:] D, 
     :param ID: Array of result, filled by this function
     :param partial: max number of points not associated at the end of T (or S, I don't remember)
     '''
-    
+
     cdef unsigned short N = S.shape[1]
     cdef unsigned short M = S.shape[0]
     cdef int i,j,pi,best_i,best_j,max_S,max_T
     cdef float d0,d1,d2,c2,c4,c5,best_dist,cd
     cdef unsigned short nnan
-    
+
     max_S = N
     max_T = N
-    
+
     for i in range(0,N):
         nnan = 0
         for j in range(0,M):
@@ -123,7 +123,7 @@ cpdef float DTW_multi(float[:, :] S, float[:, :] T, float[:,:] C, float[:,:] D, 
         if nnan == M:
             max_S = i
             break
-    
+
     for i in range(0,N):
         nnan = 0
         for j in range(0,M):
@@ -135,22 +135,22 @@ cpdef float DTW_multi(float[:, :] S, float[:, :] T, float[:,:] C, float[:,:] D, 
 
     if max_S < 2 or max_T <2 :
         print("Start is nan. Check your data")
-    
-    #initialization of ID
+
+    # initialization of ID
     for i in range(1,2*N-1):
         ID[i,0] = U2undef
         ID[i,1] = U2undef
-    
-    #Creating D distance array and backtrace array
+
+    # Creating D distance array and backtrace array
     for i in range(1,N):
         #i=0,1
         D[0,i] = F4undef
         D[1,i] = F4undef
-        
+
         #j=0,1
         D[i,0] = F4undef
         D[i,1] = F4undef
-    
+
     #for i in range(0,M):
     #    if(isnan(S[i, 0]) or isnan(T[i, 1]) or isnan(S[i, 0]) or isnan(T[i, 1])):
     #        D[0,0] = 0
@@ -161,12 +161,12 @@ cpdef float DTW_multi(float[:, :] S, float[:, :] T, float[:,:] C, float[:,:] D, 
         d0 = Distance(S[:,0], T[:,0], C, M)
         D[0,0] = d0
         B[0,0] = 18
-        
+
         d0 = Distance(S[:,1], T[:,1], C, M)
         D[1,1] = d0
         B[1,1] = 3
-    
-    #i>1 and j>1
+
+    # i>1 and j>1
     for i in range(2,max_S):       
         for j in range(2,max_T):
 
@@ -178,49 +178,49 @@ cpdef float DTW_multi(float[:, :] S, float[:, :] T, float[:,:] C, float[:,:] D, 
             c2 = D[i-1,j-1] 
             c4 = D[i-2,j-1] + d1
             c5 = D[i-1,j-2] + d2
-            
+
             if(c4<c2):
-                
+
                 if(c4<c5):
                     D[i,j] = c4 + d0
                     B[i,j] = 4
                 else:
                     D[i,j] = c5 + d0
                     B[i,j] = 5
-                    
+
             elif(c2<c5):
                 D[i,j] = c2 + d0
                 B[i,j] = 2
-                
+
             else:
                 D[i,j] = c5 + d0
                 B[i,j] = 5
 
-    #Backtracing
+    # Backtracing
     if partial>0:
         best_i = max_S-1
         best_j = max_T-1
         best_dist = F4undef
-        
+
         for i in range(max_S-partial,max_S):
             if D[i,max_T-1] < best_dist:
                 best_i = i
                 best_j = max_T-1
                 best_dist = D[best_i,best_j]
-                
+
         for j in range(max_T-partial,max_T):
             if D[max_S-1,j] < best_dist:
                 best_i = max_S-1
                 best_j = j
                 best_dist = D[best_i,best_j]
-            
+
     else:
         best_i = max_S-1
         best_j = max_T-1
-              
+
     i = best_i
     j = best_j
-    
+
     pi = 0
     ID[pi,0] = i
     ID[pi,1] = j
@@ -228,25 +228,25 @@ cpdef float DTW_multi(float[:, :] S, float[:, :] T, float[:,:] C, float[:,:] D, 
     while(i>0):
         if  (B[i,j]==1):
             i -= 1
-            
+
         elif(B[i,j]==2):
             i -= 1
             j -= 1
-            
+
         elif(B[i,j]==3):
             j -= 1
-            
+
         elif(B[i,j]==4):
             i -= 2
             j -= 1
-            
+
         elif(B[i,j]==5):
             i -= 1
             j -= 2
         else:
             #print (i,j,B[i,j],max_S,max_T)
             break
-        
+
         pi += 1
         ID[pi,0] = i
         ID[pi,1] = j

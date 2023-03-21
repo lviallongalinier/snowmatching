@@ -8,9 +8,9 @@ Modified on 2 Mar. 2023, LVG cleaning and documentation, merge with the work of 
 @author: Hagenmuller P.
 @author: Viallon Galinier L.
 
-Set of functions that relate prepare the data dans call DTW_CCore routines.
+Set of functions that relate prepare the data and call DTW_CCore routines.
 
-In this version, datas have to have the same size. Nan are taken as data and not as end of dataset.
+In this version, data have to have the same size. Nan are taken as data and not as end of dataset.
 '''
 import os.path
 
@@ -72,9 +72,9 @@ def fit_to_ref_multi(sigma, sigma_ref, coeffs, depth_grid, partial, coutdecal=0,
 
      - Profiles should share the same depth grid (thus have the same snow depth)
        and be projected on a grid that allow reattributions of points (hence sufficiently
-       thin, a typical value is around the mm for typical snow cover simulations).
+       close, a typical value is around the mm for typical snow cover simulations).
 
-    Let's note N the number of elements on th vertical grid and P the nulber of features to match.
+    Let's note N the number of elements on the vertical grid and P the number of features to match.
 
     :param sigma: Profile to be matched
     :type sigma: numpy array (P, N)
@@ -122,17 +122,17 @@ def downsample_profile(depth, value, depth_grid,
                        is_sorted=False,
                        left_value=None, right_value=None):
     """
-    Re-samples a snow profile with a high reolution (higher than the target one).
+    Re-samples a snow profile with a high resolution (higher than the target one).
     The profile is the value of one parameter as a function of depth. It is resampled
     onto another depth array `depth_grid`.
 
-    Note that this function is used for downsampling, with an optional smoothing of the intial profile.
+    Note that this function is used for downsampling, with an optional smoothing of the initial profile.
 
     :param value: the variable of the profile (e.g. density, hardness)
     :param depth: the depth of the profile corresponding to value
-    :param depth_grid: the depth on which the profile (value, depth) is resampled
+    :param depth_grid: the depth on which the profile (value, depth) is resampled (units have to be coherent with depth)
     :param depth_smooth: (optional) size (same unit as param depth) of the Gaussian kernel
-    used to smooth the initial profile. Generally set to the typical resolution of depth_grid.
+    used to smoothen the initial profile. Generally set to the typical resolution of depth_grid.
     :param ratio_smoothing: used to re-interpolate the initial profile on higher sampling rate
     in case of irregular depth spacing.
     :param is_sorted: set to False if depth is not sorted increasingly
@@ -154,7 +154,7 @@ def downsample_profile(depth, value, depth_grid,
     >>> depth = np.linspace(0,1,100)
     >>> value = np.sin(depth)
     >>> depth_grid = np.linspace(0,0.8,20)
-    >>> value_on_grid = sample_profile(value,depth,depth_grid,0.8/20.,1)
+    >>> value_on_grid = downsample_profile(value,depth,depth_grid,0.8/20.,1)
     >>> print np.abs(value_on_grid - np.sin(depth_grid)).max() < 0.02
     True
     """
@@ -192,13 +192,13 @@ def downsample_profile(depth, value, depth_grid,
 def oversample_profile(depth, value, depth_grid,
                        is_sorted=False, kind='next'):
     """
-    Re-samples a snow profile with a low reolution (lower than the target one).
+    Re-samples a snow profile with a low resolution (lower than the target one).
     The profile is the value of one parameter as a function of depth. It is resampled
     onto another depth array `depth_grid`.
 
     Note that this function is used for oversampling. for downsampling, you need
     an additional smoothing of the intial profile. Please refer to function
-    `subsample_profile`.
+    `downsample_profile`.
 
     :param value: the variable of the profile (e.g. density, hardness)
     :param depth: the depth of the profile corresponding to value
@@ -224,7 +224,7 @@ def oversample_profile(depth, value, depth_grid,
     >>> depth = np.linspace(0,1,100)
     >>> value = np.sin(depth)
     >>> depth_grid = np.linspace(0,0.8,20)
-    >>> value_on_grid = sample_profile(value,depth,depth_grid,0.8/20.,1)
+    >>> value_on_grid = oversample_profile(value,depth,depth_grid,0.8/20.,1)
     >>> print np.abs(value_on_grid - np.sin(depth_grid)).max() < 0.02
     True
     """
