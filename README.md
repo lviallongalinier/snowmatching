@@ -124,3 +124,15 @@ Some examples are provided in the `example` folder. This folder will be enriched
 [Schaller2016]: https://doi.org/10.5194/tc-10-1991-2016
 [Viallon2021]: https://doi.org/10.1016/j.coldregions.2020.103163
 
+# Authorship and Licence
+
+This code is the result of the work of :
+
+* P. Hagenmuller
+* L. Viallon Galinier
+* N. Calonne
+* V. Nussbaum
+
+This piece of code is provided with absolutely no warranty.
+
+All rights are reserved, until we define a licence between the different co-authors.
