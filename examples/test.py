@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+This example illustrate the principles of DTW by matching
+two profiles together
+"""
+
 import os.path
 
 import numpy as np
+import matplotlib.pyplot as plt
+
 
 import snowmatching.DTW.usefull
 
@@ -38,13 +45,11 @@ sigma_moved, depth_moved = snowmatching.DTW.usefull.fit_to_ref_multi(profile_tom
 print('sm', sigma_moved.shape)
 print('dm', depth_moved.shape)
 
-import matplotlib.pyplot as plt
-
 fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
 ax1.step(profile_ref[0, :], depth_grid, label='Reference')
 ax1.title.set_text('Reference')
 ax2.step(profile_tomatch[0, :], depth_grid, label='Profile to match')
 ax2.title.set_text('To match')
-ax3.step(profile_tomatch[0, :], depth_moved[1, :], label='Profile matched')
+ax3.step(profile_tomatch[0, :], depth_moved[0, :], label='Profile matched')
 ax3.title.set_text('Matched')
 plt.show()

@@ -21,7 +21,7 @@ from scipy.interpolate import interp1d
 _here = os.path.dirname(os.path.realpath(__file__))
 
 try:
-    from .DTW_CCore import DTW_multi
+    from .DTW_CCore import DTW_multi, DTW_set
 except ModuleNotFoundError:
     _filepath = os.path.join(_here, 'DTW_CCore.so')
     print("Impossible import of DTW_CCore ({})\n"
@@ -38,34 +38,97 @@ def fromIDtoGrid_multi(sigma_s, depth_grid, IDs):
 
     Returns both the shifted snow properties and the shifted depth
 
+    V: Number of variables in each profile
+    N: Number of points in the profile (height of the profile)
+
     :param sigma_s: Snow parameters to shift
-    :type sigma_s: numpy array (2, N, P)
+    :type sigma_s: numpy array (2, V, N)
     :param depth_grid: Depth grid
     :type depth_grid: numpy array (N)
 
     :retuns: Moved sigma_s and depth moved
-    :rtype: numpy arrays (N, P) and (2, N)
+    :rtype: numpy arrays (2, V, N) and (2, N)
     """
-    dim_sigma = sigma_s.shape[1]
+    n_var = sigma_s.shape[1]
     depth_moved = np.zeros((2, sigma_s.shape[2]))
     sigma_moved = np.zeros_like(sigma_s)
 
     # only for two profiles
     ok = (IDs[:, 0] < U2undef) * (IDs[:, 1] < U2undef)
-    depth_moved[0] = depth_grid
-    depth_moved[1] = np.interp(depth_grid, depth_grid[IDs[ok, 1]][::-1],
-                               depth_grid[IDs[ok, 0][::-1]])
-    sigma_moved[0] = sigma_s[0]
-    for i in range(dim_sigma):
-        sigma_moved[1, i, :] = np.interp(depth_grid, depth_moved[1], sigma_s[1, i, :])
+    depth_moved[1] = depth_grid
+    depth_moved[0] = np.interp(depth_grid, depth_grid[IDs[ok, 0]][::-1],
+                               depth_grid[IDs[ok, 1][::-1]])
+    sigma_moved[1] = sigma_s[1]
+    for i in range(n_var):
+        sigma_moved[0, i, :] = np.interp(depth_grid, depth_moved[0], sigma_s[0, i, :])
 
     return sigma_moved, depth_moved
 
 
-def fit_to_ref_multi(sigma, sigma_ref, coeffs, depth_grid, partial, coutdecal=0, unbias=False):
+def fromIDstoGrid_set(value_s, depth, ID_s):
+    """
+    Function to provide shift of the ste of profiles
+    from DTW and stored in IDs matrix (from DTW_set).
+
+    Returns both the shifted snow properties and the shifted depth
+
+    This function also take care of th ebias that can be introduced
+    by DTW_set and ensre that the mean displacement of all profiles
+    is null.
+
+    P: Number of profiles
+    V: Number of variables in each profile
+    N: Number of points in the profile (height of the profile)
+
+    :param sigma_s: Snow parameters to shift
+    :type sigma_s: numpy array (P, V, N)
+    :param depth_grid: Depth grid
+    :type depth_grid: numpy array (N)
+
+    :retuns: Moved sigma_s and depth moved
+    :rtype: numpy arrays (P, V, N) and (P, N)
+    """
+    P = value_s.shape[0]
+    V = value_s.shape[1]
+    N = value_s.shape[2]
+
+    value_moved_s = np.zeros_like(value_s)
+    depth_back_s = np.zeros(shape=(P, N), dtype='f4')
+    depth_forw_s = np.zeros(shape=(P, N), dtype='f4')
+
+    for i_pro in range(value_s.shape[0]):
+        path_length = np.argmin(ID_s[i_pro, :, 0] == 0) + 1
+        if (ID_s[i_pro, :path_length:-1, 1] > depth.shape[0]).any():
+            depth_back_s[i_pro, :] = depth
+        else:
+            depth_back_s[i_pro, :] = np.interp(depth,
+                                               depth[ID_s[i_pro, :path_length:-1, 1]],
+                                               depth[ID_s[i_pro, :path_length:-1, 0]], right=np.nan)
+    # Detrend
+    import warnings
+    with warnings.catch_warnings():
+        depth_back_bias = np.nanmean(depth_back_s, axis=0) - depth
+
+    # Set the correct dimension of the table (complicated way of doing that, surely not usefull)
+    depth_forw_unbias_s = depth_forw_s + depth_back_bias.reshape(1, -1)
+
+    # Fill
+    for i_pro in range(value_s.shape[0]):
+        depth_forw_unbias_s[i_pro] = np.interp(depth, depth_back_s[i_pro], depth + depth_back_bias)
+
+    for i_pro in range(P):
+        for i_var in range(V):
+            value_moved_s[i_pro, i_var, :] = np.interp(depth,
+                                                       depth_forw_unbias_s[i_pro], value_s[i_pro, i_var, :],
+                                                       right=np.nan)
+
+    return depth_forw_unbias_s, value_moved_s
+
+
+def fit_to_ref_multi(sigma, sigma_ref, coeffs, depth_grid, partial=0, coutdecal=0, unbias=False):
     """
     Main function to match two snow profiles. The profiles are described by the depth grid,
-    and th eproperties of the two profiles: the reference one (sigma_ref) and the profile to
+    and the properties of the two profiles: the reference one (sigma_ref) and the profile to
     be matched (sigma).
 
     Prerequisites:
@@ -74,14 +137,18 @@ def fit_to_ref_multi(sigma, sigma_ref, coeffs, depth_grid, partial, coutdecal=0,
        and be projected on a grid that allow reattributions of points (hence sufficiently
        close, a typical value is around the mm for typical snow cover simulations).
 
-    Let's note N the number of elements on the vertical grid and P the number of features to match.
+    Let's note N the number of elements on the vertical grid and V the number of features to match.
 
     :param sigma: Profile to be matched
-    :type sigma: numpy array (P, N)
+    :type sigma: numpy array (V, N)
     :param sigma_ref: Reference profile
-    :type sigma: numpy array (P, N)
+    :type sigma: numpy array (V, N)
     :param coeffs: Coefficients
-    :type coeffs: numpy array (P, 3)
+    :type coeffs: numpy array (V, 3)
+    :param partial: For partial matching (at bottom)
+    :type partial: int
+    :param coutdecal: Additional cost to limit displacement
+    :type coutdecal: float
     """
     if isinstance(unbias, bool):
         unbias_bool = unbias
@@ -109,12 +176,43 @@ def fit_to_ref_multi(sigma, sigma_ref, coeffs, depth_grid, partial, coutdecal=0,
             sigma2[i, :] = sigma2[i, :] - (ms1 - msr)
 
     # Call DTW
-    DTW_multi(sigma_ref.astype('f4'), sigma2.astype('f4'), coeffs.astype('f4'), D, B, IDs, partial, coutdecal)
+    DTW_multi(sigma2.astype('f4'), sigma_ref.astype('f4'), coeffs.astype('f4'), D, B, IDs, partial, coutdecal)
 
-    sigma_s = np.array([sigma_ref, sigma])
+    sigma_s = np.array([sigma, sigma_ref])
     sigma_moved, depth_moved = fromIDtoGrid_multi(sigma_s, depth_grid, IDs)
 
     return sigma_moved, depth_moved
+
+
+def autofit_set(value_s, depth, coeffs, partial=0, coutdecal=0, n_iter=10, n_thread=1):
+    """
+    Main function to match multiple profiles into a mean profile.
+    The profiles are described by the depth grid, and the properties of
+    all the profiles.
+
+    Prerequisites:
+
+     - Profiles should share the same depth grid (thus have the same snow depth)
+       and be projected on a grid that allow reattributions of points (hence sufficiently
+       close, a typical value is around the mm for typical snow cover simulations).
+
+    Let's note N the number of elements on the vertical grid and V the number of features to match,
+    P the number of profiles.
+
+    :param value_s: Profiles to be matched
+    :type sigma: numpy array (P, V, N)
+    :param coeffs: Coefficients
+    :type coeffs: numpy array (V, 3)
+    :param partial: For partial matching (at bottom)
+    :type partial: int
+    :param coutdecal: Additional cost to limit displacement
+    :type coutdecal: float
+    """
+    M, ID_s = DTW_set(value_s.astype('f4'), n_iter, coeffs.astype('f4'), partial, coutdecal, n_thread)
+
+    depth_moved_s, value_moved_s = fromIDstoGrid_set(value_s, depth, ID_s)
+
+    return M, depth_moved_s, value_moved_s
 
 
 def downsample_profile(depth, value, depth_grid,
