@@ -15,6 +15,8 @@ import scipy.ndimage
 
 import snowmatching.DTW.usefull
 
+np.random.seed(0)
+
 _here = os.path.dirname(os.path.realpath(__file__))
 profile_filename = os.path.join(_here, 'profiles.csv')
 

@@ -2,7 +2,8 @@
 
 import numpy as np
 import cython
-# from cython.parallel import threadid, prange
+#from cython.parallel import threadid, prange
+# See PARALLEL comments to enable paralelization
 
 from libc.math cimport isnan, NAN, fabs
 #DOC
@@ -333,11 +334,13 @@ cpdef DTW_set(float[:, :, :] Ss,
         d_tot = 0
 
         # Compute the DTW of each profile against mean
-        for i_pro in range(n_pro):
+        # PARALLEL, change for :
         # for i_pro in prange(n_pro, nogil=True, num_threads=n_thr):
+        for i_pro in range(n_pro):
 
             # For one profile
-            i_thr = 0  # threadid()
+            # PARALLEL : replace 0 by threadid()
+            i_thr = 0
             # Compute DTW between profile and previous mean
             d0 = DTW_multi(Ss[i_pro], M,
                            C,
