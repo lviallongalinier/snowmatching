@@ -133,6 +133,6 @@ This code is the result of the work of :
 * N. Calonne
 * V. Nussbaum
 
-This piece of code is provided with absolutely no warranty.
+We thank the users to credit the original authors of this code, for instance by citing [Viallon-Galinier et al. (2021)][Viallon2021].
 
-All rights are reserved, until we define a licence between the different co-authors.
+This piece of code is provided with absolutely no warranty.
