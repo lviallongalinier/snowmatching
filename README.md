@@ -86,10 +86,10 @@ The first preparation step is to ensure that the two profiles to match have the 
 If necessary, the profiles could be normalized in terms of variance and mean. The function `snowmatching.DTW.usefull.scaling_profile` is provided. It computes means and variance for normalization. It should be applied on both reference and to match profiles. It remains to the user to decide whether the normalization should be done with mean and variance values computed on each profile or on a larger set of profiles to prevent introduction of biases due to discrepancies between the two profiles to match.
 
 ```python
-from snowmatching.DTW import useful
+from snowmatching.DTW import usefull
 
-normalized_reference_value = useful.scaling_profile(reference_values)
-normalized_tomatch_value = useful.scaling_profile(tomatch_values)
+normalized_reference_value = usefull.scaling_profile(reference_values)
+normalized_tomatch_value = usefull.scaling_profile(tomatch_values)
 ```
 
 The profiles have then to be projected on a common depth grid, that is used by DTW as the available displacement resolution. The typical grid resolution should be of the order of magnitude of the resolution of the highly resolved data (SMP) but lower in case of lower resolution data (e.g. classical snow profiles). The typical resolutions used up to now are around 1mm.
@@ -108,7 +108,7 @@ Note that when matching profiles with significantly different resolutions (class
 Finally once the two profiles `reference_values` and `tomatch_values` are on the same grid `matching_depth_grid` the matching itself could be performed as follows:
 
 ```python
-from snowmatching.DTW.useful import fit_to_ref_multi
+from snowmatching.DTW.usefull import fit_to_ref_multi
 
 moved_values, depth_grid_moved = fit_to_ref_multi(tomatch_values, reference_values, coeffs, matching_depth_grid, 0)
 ```
