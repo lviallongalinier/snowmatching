@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "cython", 'numpy', 'scipy']
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "Snowmatching"
+version = "0.2.1"
+dependencies = ['numpy', 'scipy']
+readme = "README.md"
+requires-python = ">=3.6"
+description = "Snowmatching is a collection of tools to match snow profiles against a refernce profile for further use in comparisons of snow profiles from different sources, do clustering or define."
+
+[project.urls]
+Homepage = "https://github.com/lviallongalinier/snowmatching"
+Repository = "https://github.com/lviallongalinier/snowmatching"
+
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ['snowmatching', 'snowmatching.DTW']
