@@ -31,6 +31,26 @@ GRAIN_G = [[0,   F4l, F4l, F4l, F4l, F4l, F4l, F4l, F4l, F4l], # X
            [F4l, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0], # 8SH
            [F4l, 0.8, 0.6, 0.5, 0.2, 0.3, 1.0, 1.0, 1.0, 0.0]] # 9PPgp
 
+cdef float GRAIN_G_CROCUS[15][15]
+GRAIN_G_CROCUS = [
+    # 0       1     2     3     4     5     6     7     8     9    10    11    12    13    14
+    # PP  PP/DF    DF DF/RG DF/FC  PPgp    RG MF/RG RG/FC    FC FC/DH    DH    MF MF/DH MF/FC
+    [0.00, 0.10, 0.20, 0.35, 0.50, 0.80, 0.50, 0.75, 0.65, 0.80, 0.90, 1.00, 1.00, 1.00, 0.90],  # 0 PP
+    [0.10, 0.00, 0.10, 0.20, 0.40, 0.70, 0.35, 0.60, 0.50, 0.70, 0.80, 1.00, 1.00, 1.00, 0.80],  # 1 PP/DF
+    [0.20, 0.10, 0.00, 0.10, 0.30, 0.60, 0.20, 0.60, 0.40, 0.60, 0.80, 1.00, 1.00, 1.00, 0.80],  # 2 DF
+    [0.35, 0.20, 0.10, 0.00, 0.30, 0.55, 0.10, 0.50, 0.30, 0.60, 0.75, 0.95, 1.00, 0.95, 0.80],  # 3 DF/RG
+    [0.50, 0.40, 0.30, 0.30, 0.00, 0.40, 0.40, 0.60, 0.10, 0.30, 0.40, 0.60, 1.00, 0.60, 0.50],  # 4 DF/FC
+    [0.80, 0.70, 0.60, 0.55, 0.40, 0.00, 0.50, 0.75, 0.35, 0.20, 0.25, 0.30, 1.00, 0.65, 0.60],  # 5 PPgp
+    [0.50, 0.35, 0.20, 0.10, 0.40, 0.50, 0.00, 0.50, 0.30, 0.60, 0.75, 0.90, 1.00, 0.95, 0.80],  # 6 RG
+    [0.75, 0.60, 0.60, 0.50, 0.60, 0.75, 0.50, 0.00, 0.50, 0.80, 0.80, 0.95, 0.50, 0.45, 0.30],  # 7 MF/RG
+    [0.65, 0.50, 0.40, 0.30, 0.10, 0.35, 0.30, 0.50, 0.00, 0.30, 0.40, 0.55, 1.00, 0.60, 0.50],  # 8 RG/FC
+    [0.80, 0.70, 0.60, 0.60, 0.30, 0.20, 0.60, 0.80, 0.30, 0.00, 0.10, 0.20, 1.00, 0.60, 0.50],  # 9 FC
+    [0.90, 0.80, 0.80, 0.75, 0.40, 0.25, 0.75, 0.80, 0.40, 0.10, 0.00, 0.10, 1.00, 0.50, 0.50],  # 10 FC/DH
+    [1.00, 1.00, 1.00, 0.95, 0.60, 0.30, 0.90, 0.95, 0.55, 0.20, 0.10, 0.00, 1.00, 0.50, 0.60],  # 11 MF/FC
+    [1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 1.00, 0.50, 1.00, 1.00, 1.00, 1.00, 0.00, 0.50, 0.50],  # 12 MF
+    [1.00, 1.00, 1.00, 0.95, 0.60, 0.65, 0.95, 0.45, 0.60, 0.60, 0.50, 0.50, 0.50, 0.00, 0.10],  # 13 MF/DH
+    [0.90, 0.80, 0.80, 0.80, 0.50, 0.60, 0.80, 0.30, 0.50, 0.50, 0.50, 0.60, 0.50, 0.10, 0.00]]  # 14 MF/FC
+
 
 cdef float Distance_continue(float S, float T, float C) nogil:
     """
@@ -63,6 +83,17 @@ cdef float Distance_grains(float S, float T) nogil:
     dist_direc = (dist_1+dist_2) / 2.
     return min(dist_cross, dist_direc)
 
+cdef float Distance_grains_crocus(float S, float T) nogil:
+    """
+    Function that compute the distance between two grain types.
+    Grains types are crocus grain types, passed as integers between 0 and 14.
+    """
+    cdef int g_0, g_1
+    g_0 = int(S)
+    g_1 = int(T)
+    return GRAIN_G_CROCUS[g_0][g_1]
+
+
 cdef float Distance(float[:] S, float[:] T, float[:,:] C, unsigned short M) nogil:
     """
     Function that compute the distance between two values of the profile.
@@ -78,6 +109,8 @@ cdef float Distance(float[:] S, float[:] T, float[:,:] C, unsigned short M) nogi
     for i in range(0,M):
         if(C[i,2]==0):
             dd = Distance_continue(S[i], T[i], C[i, 1])
+        elif(C[i,2]==2):
+            dd = Distance_grains_crocus(S[i], T[i])
         else:
             dd = Distance_grains(S[i], T[i])
         if(not isnan(dd)):
