@@ -9,7 +9,7 @@ import numpy
 
 _here = os.path.dirname(os.path.realpath(__file__))
 
-setup(name='Snowmatching',
+setup(name='snowmatching',
       # Building the DTW C Core
       ext_modules=[
           Extension("snowmatching.DTW.DTW_CCore",
@@ -18,7 +18,6 @@ setup(name='Snowmatching',
                     extra_compile_args = ["-O3", "-march=native", "-fopenmp"],
                     include_dirs=[numpy.get_include()],
                     # extra_link_args=['-fopenmp']
-                    )
-         ],
+                    )],
       cmdclass = {"build_ext": build_ext},
       )

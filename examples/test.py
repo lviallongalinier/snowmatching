@@ -7,6 +7,7 @@ two profiles together
 """
 
 import os.path
+import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ profile_filename = os.path.join(_here, 'profiles.csv')
 
 profiles = np.genfromtxt(profile_filename)
 
+t_ = time.time()
 profile_ref = profiles[:, 0]
 profile_tomatch = profiles[:, 1]
 depth = np.arange(profile_ref.size)
@@ -38,18 +40,23 @@ coeffs = np.array([[1, 1, 0]])
 print('pr', profile_ref.shape)
 print('pr', profile_tomatch.shape)
 print('co', coeffs.shape)
+print(f'Preparation of profiles: {time.time()-t_:.3f}s')
 
-
+t_ = time.time()
 sigma_moved, depth_moved = snowmatching.DTW.usefull.fit_to_ref_multi(profile_tomatch, profile_ref, coeffs, depth_grid, 0)
+print(f'Fit: {time.time()-t_:.3f}s')
 
 print('sm', sigma_moved.shape)
 print('dm', depth_moved.shape)
 
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, sharey=True)
-ax1.step(profile_ref[0, :], depth_grid, label='Reference')
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharex=True, sharey=True)
+ax1.step(profile_ref[0, :], depth_grid, label='Reference', color='blue')
 ax1.title.set_text('Reference')
-ax2.step(profile_tomatch[0, :], depth_grid, label='Profile to match')
+ax2.step(profile_tomatch[0, :], depth_grid, label='Profile to match', color='orange')
 ax2.title.set_text('To match')
-ax3.step(profile_tomatch[0, :], depth_moved[0, :], label='Profile matched')
+ax3.step(profile_tomatch[0, :], depth_moved[0, :], label='Profile matched', color='red')
 ax3.title.set_text('Matched')
+ax4.step(sigma_moved[0, 0, :], depth_grid, label='Profile matched', color='red')
+ax4.step(sigma_moved[1, 0, :], depth_grid, label='Profile ref', color='blue')
+ax4.title.set_text('Matched vs ref')
 plt.show()

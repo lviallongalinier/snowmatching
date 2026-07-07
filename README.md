@@ -113,7 +113,9 @@ from snowmatching.DTW.usefull import fit_to_ref_multi
 moved_values, depth_grid_moved = fit_to_ref_multi(tomatch_values, reference_values, coeffs, matching_depth_grid, 0)
 ```
 
-`coeffs` is an array of shape (P, 3) that defines the properties of each parameter of the profiles used for matching. If you match only one parameter (e.g. density), use the following array: `[[1, 1, 0]]`. The function return the moved value and the moved grid. Do not use simultaneously these two output values: either use the common depth grid and take the moved values or use the original values and use the new depth grid.
+`coeffs` is an array of shape (P, 3) that defines the properties of each parameter of the profiles used for matching. If you match only one parameter (e.g. density), use the following array: `[[1, 1, 0]]`. The first element is the importance of this variable compared to others (multiplicative coefficient applied to the considered parameter) and the second a normalization of variable (set to one if variables are already comparable in values). Note that the ratio between 1st and scond corresponds to $1/\alpha_i$. The last element is set to zero except if you want to compare grain types (set to 1 for multiplexed observed grain types and 2 for Crocus grain types).
+
+The function return the moved value and the moved grid. Do not use simultaneously these two output values: either use the common depth grid and take the moved values or use the original values and use the new depth grid.
 
 Some examples are provided in the `example` folder. This folder will be enriched in the future.
 
